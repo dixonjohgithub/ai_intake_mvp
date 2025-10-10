@@ -8,6 +8,9 @@
 
 # Project-specific files
 CLAUDE.md
+create-prd.md
+generate-tasks.md
+process-task-list.md
 
 # Dependencies
 node_modules/
