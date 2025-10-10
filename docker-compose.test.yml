@@ -1,0 +1,60 @@
+version: '3.8'
+
+# Test configuration
+# Usage: docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: ai-intake-app-test
+    environment:
+      - NODE_ENV=test
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+      - OPENAI_MODEL=gpt-5
+      - DB_USE_POSTGRES=true
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=ai_intake_test
+      - DB_USER=ai_intake_test
+      - DB_PASSWORD=testpass
+      - SESSION_SECRET=test-secret-key-for-testing-only
+      - ENABLE_DEBUG_PANEL=true
+      - ENABLE_DECISION_LOGGING=true
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./data/test:/app/data
+      - ./logs/test:/app/logs
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks:
+      - ai-intake-test-network
+    command: npm test
+
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: ai-intake-postgres-test
+    environment:
+      - POSTGRES_USER=ai_intake_test
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=ai_intake_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - ai-intake-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_intake_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  ai-intake-test-network:
+    driver: bridge
