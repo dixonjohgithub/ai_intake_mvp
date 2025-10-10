@@ -6,6 +6,9 @@
 .env.production
 .env*.local
 
+# Project-specific files
+CLAUDE.md
+
 # Dependencies
 node_modules/
 /.pnp
