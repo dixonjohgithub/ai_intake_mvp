@@ -1,0 +1,265 @@
+/* Wells Fargo Global Styles */
+
+:root {
+  /* Wells Fargo Brand Colors */
+  --wf-red: #D71E2B;
+  --wf-red-dark: #B71C1C;
+  --wf-red-light: #EF5350;
+  --wf-yellow: #FFCD41;
+  --wf-yellow-dark: #F9A825;
+  --wf-yellow-light: #FFE082;
+
+  /* Neutral Colors */
+  --wf-black: #000000;
+  --wf-gray-900: #212121;
+  --wf-gray-800: #424242;
+  --wf-gray-700: #616161;
+  --wf-gray-600: #757575;
+  --wf-gray-500: #9E9E9E;
+  --wf-gray-400: #BDBDBD;
+  --wf-gray-300: #E0E0E0;
+  --wf-gray-200: #EEEEEE;
+  --wf-gray-100: #F5F5F5;
+  --wf-white: #FFFFFF;
+
+  /* Semantic Colors */
+  --wf-success: #4CAF50;
+  --wf-warning: var(--wf-yellow);
+  --wf-error: var(--wf-red);
+  --wf-info: #2196F3;
+
+  /* Typography */
+  --wf-font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --wf-font-heading: var(--wf-font-primary);
+
+  /* Font Sizes */
+  --wf-text-xs: 0.75rem;    /* 12px */
+  --wf-text-sm: 0.875rem;   /* 14px */
+  --wf-text-base: 1rem;     /* 16px */
+  --wf-text-lg: 1.125rem;   /* 18px */
+  --wf-text-xl: 1.25rem;    /* 20px */
+  --wf-text-2xl: 1.5rem;    /* 24px */
+  --wf-text-3xl: 1.875rem;  /* 30px */
+  --wf-text-4xl: 2.25rem;   /* 36px */
+  --wf-text-5xl: 3rem;      /* 48px */
+
+  /* Font Weights */
+  --wf-font-light: 300;
+  --wf-font-regular: 400;
+  --wf-font-medium: 500;
+  --wf-font-semibold: 600;
+  --wf-font-bold: 700;
+
+  /* Line Heights */
+  --wf-leading-tight: 1.25;
+  --wf-leading-normal: 1.5;
+  --wf-leading-relaxed: 1.75;
+
+  /* Spacing */
+  --wf-spacing-xs: 0.25rem;  /* 4px */
+  --wf-spacing-sm: 0.5rem;   /* 8px */
+  --wf-spacing-md: 1rem;     /* 16px */
+  --wf-spacing-lg: 1.5rem;   /* 24px */
+  --wf-spacing-xl: 2rem;     /* 32px */
+  --wf-spacing-2xl: 3rem;    /* 48px */
+  --wf-spacing-3xl: 4rem;    /* 64px */
+
+  /* Border Radius */
+  --wf-radius-sm: 0.25rem;   /* 4px */
+  --wf-radius-md: 0.5rem;    /* 8px */
+  --wf-radius-lg: 1rem;      /* 16px */
+  --wf-radius-full: 9999px;
+
+  /* Shadows */
+  --wf-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --wf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --wf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --wf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Transitions */
+  --wf-transition-fast: 150ms ease-in-out;
+  --wf-transition-normal: 250ms ease-in-out;
+  --wf-transition-slow: 350ms ease-in-out;
+}
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--wf-font-primary);
+  font-size: var(--wf-text-base);
+  line-height: var(--wf-leading-normal);
+  color: var(--wf-gray-900);
+  background-color: var(--wf-white);
+}
+
+/* Typography Classes */
+h1, .h1 {
+  font-size: var(--wf-text-4xl);
+  font-weight: var(--wf-font-bold);
+  line-height: var(--wf-leading-tight);
+  color: var(--wf-gray-900);
+}
+
+h2, .h2 {
+  font-size: var(--wf-text-3xl);
+  font-weight: var(--wf-font-semibold);
+  line-height: var(--wf-leading-tight);
+  color: var(--wf-gray-900);
+}
+
+h3, .h3 {
+  font-size: var(--wf-text-2xl);
+  font-weight: var(--wf-font-semibold);
+  line-height: var(--wf-leading-normal);
+  color: var(--wf-gray-900);
+}
+
+h4, .h4 {
+  font-size: var(--wf-text-xl);
+  font-weight: var(--wf-font-medium);
+  line-height: var(--wf-leading-normal);
+  color: var(--wf-gray-900);
+}
+
+h5, .h5 {
+  font-size: var(--wf-text-lg);
+  font-weight: var(--wf-font-medium);
+  line-height: var(--wf-leading-normal);
+  color: var(--wf-gray-900);
+}
+
+h6, .h6 {
+  font-size: var(--wf-text-base);
+  font-weight: var(--wf-font-medium);
+  line-height: var(--wf-leading-normal);
+  color: var(--wf-gray-900);
+}
+
+p {
+  margin-bottom: var(--wf-spacing-md);
+}
+
+a {
+  color: var(--wf-red);
+  text-decoration: none;
+  transition: color var(--wf-transition-fast);
+}
+
+a:hover {
+  color: var(--wf-red-dark);
+  text-decoration: underline;
+}
+
+/* Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-bold {
+  font-weight: var(--wf-font-bold);
+}
+
+.font-semibold {
+  font-weight: var(--wf-font-semibold);
+}
+
+.font-medium {
+  font-weight: var(--wf-font-medium);
+}
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--wf-spacing-md);
+}
+
+/* Button Base Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--wf-spacing-sm) var(--wf-spacing-lg);
+  font-size: var(--wf-text-base);
+  font-weight: var(--wf-font-medium);
+  line-height: var(--wf-leading-normal);
+  border-radius: var(--wf-radius-md);
+  transition: all var(--wf-transition-fast);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--wf-red);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background-color: var(--wf-red);
+  color: var(--wf-white);
+}
+
+.btn-primary:hover {
+  background-color: var(--wf-red-dark);
+}
+
+.btn-secondary {
+  background-color: var(--wf-yellow);
+  color: var(--wf-gray-900);
+}
+
+.btn-secondary:hover {
+  background-color: var(--wf-yellow-dark);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--wf-red);
+  border: 2px solid var(--wf-red);
+}
+
+.btn-outline:hover {
+  background-color: var(--wf-red);
+  color: var(--wf-white);
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus Styles for Accessibility */
+*:focus-visible {
+  outline: 2px solid var(--wf-red);
+  outline-offset: 2px;
+}

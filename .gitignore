@@ -23,6 +23,11 @@ node_modules/
 # Testing
 /coverage
 /.nyc_output
+/playwright-report
+/test-results
+/tests/visual/**/*-actual.png
+/tests/visual/**/*-expected.png
+/tests/visual/**/*-diff.png
 
 # Production
 /build
