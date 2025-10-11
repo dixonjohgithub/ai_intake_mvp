@@ -24,7 +24,16 @@ const nextConfig = {
 
   // Image optimization configuration
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
   },
 
   // Headers for security and CORS

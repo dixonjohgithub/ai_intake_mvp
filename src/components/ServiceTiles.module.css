@@ -1,0 +1,95 @@
+.servicesSection {
+  padding: 3rem 0;
+  background-color: #f8f8f8;
+}
+
+.tilesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--wf-white);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 200px;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tileContent {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.tileIcon {
+  color: #666;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tileTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--wf-gray-900);
+  margin: 0 0 0.75rem 0;
+}
+
+.tileDescription {
+  font-size: 0.875rem;
+  color: var(--wf-gray-600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tileBottomBorder {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--wf-yellow);
+}
+
+.tile:hover .tileBottomBorder {
+  height: 6px;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--wf-red);
+  outline-offset: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tilesGrid {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+  }
+
+  .tile {
+    min-height: auto;
+  }
+
+  .tileContent {
+    padding: 1.5rem;
+  }
+}
