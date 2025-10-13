@@ -83,10 +83,12 @@ export default async function handler(
 
     // Map userData keys to topics to avoid duplicates
     if (userData['idea_description'] || userData['idea'] || userData['core_idea']) {
-      coveredTopics.push('basic idea description', 'core concept', 'solution overview', 'main idea', 'GenAI solution');
-      // Suggest next logical questions
+      coveredTopics.push('basic idea description', 'core concept', 'solution overview', 'main idea', 'GenAI solution',
+                         'project idea', 'GenAI project idea', 'brief overview', 'overview of your idea',
+                         'describe your idea', 'what you want to build');
+      // Suggest next logical questions - NEVER ask for idea again
       if (currentStep === 1) {
-        questionsSuggestedNext.push('solution name', 'specific use case');
+        questionsSuggestedNext.push('solution name', 'specific use case', 'industry or department');
       } else if (currentStep === 2) {
         questionsSuggestedNext.push('business problem', 'target users');
       }
@@ -184,6 +186,8 @@ IMPORTANT:
 7. NEVER ask for information already provided in userData
 8. If user described their idea, don't ask "what is the core idea" - move to next topic
 9. Check userData keys to avoid duplicate questions
+10. CRITICAL: If 'idea_description' exists, NEVER ask for "overview", "brief overview", "project idea", or any variation
+11. When idea_description exists, immediately move to next topic like solution name or use case
 </critical_rules>
 
 <examples_of_bad_questions>
@@ -207,6 +211,8 @@ Step 1 (Introduction):
   - If 'idea_description' exists: Ask about solution name, specific use case, or industry
   - If no responses yet: This means initial question was ALREADY asked in welcome message, don't repeat
   - NEVER ask "what is the core idea" after user described their idea
+  - NEVER ask for "brief overview" or "project idea" if idea_description already exists
+  - Valid Step 1 questions AFTER idea is provided: solution name, use case details, industry/department
 
 Step 2 (Business Case):
   - Ask about: Business problem OR target users OR expected benefits (SEPARATELY)
