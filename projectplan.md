@@ -10,7 +10,7 @@ Building an interactive web-based tool to revolutionize Wells Fargo's GenAI idea
 - Multi-stage Docker build for optimized images
 - Nginx reverse proxy configuration
 - Environment variables setup (.env.example, .env created)
-- OpenAI API client integration (GPT-4/5 reasoning engine)
+- OpenAI API client integration (GPT-5 reasoning engine)
 - PostgreSQL container running successfully ✅
 - Health check services implemented
 - Basic Next.js project structure
@@ -95,7 +95,7 @@ Building an interactive web-based tool to revolutionize Wells Fargo's GenAI idea
 ## Key Dependencies
 
 ### External Services
-- ✅ OpenAI API (GPT-4/5) - Configured
+- ✅ OpenAI API (GPT-5) - Configured
 - ✅ PostgreSQL Database - Containerized
 - ⏳ Wells Fargo Design Assets - Using provided images
 

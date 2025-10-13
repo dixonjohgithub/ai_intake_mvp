@@ -18,7 +18,7 @@ async function testOpenAI() {
   }
 
   console.log('✅ OpenAI API key format looks valid');
-  console.log('Model:', process.env.OPENAI_MODEL || 'gpt-4-turbo-preview');
+  console.log('Model:', process.env.OPENAI_MODEL || 'gpt-5');
   console.log('Embedding Model:', process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small');
 
   // Note: Actual API test would require the openai package to be installed

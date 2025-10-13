@@ -32,17 +32,30 @@ export async function generateQuestion(context: {
       messages: [
         {
           role: 'system',
-          content: `You are an AI assistant helping collect information for a GenAI idea submission at Wells Fargo.
-                   Generate thoughtful, contextual follow-up questions that help clarify and expand on the idea.
-                   Focus on business value, technical feasibility, and implementation details.`
+          content: `<role>
+AI assistant for Wells Fargo GenAI idea intake process
+</role>
+
+<goal>
+Generate one highly relevant follow-up question to gather missing information for a comprehensive GenAI proposal
+</goal>
+
+<constraints>
+- Questions must be specific and actionable
+- Focus on uncovering business value, technical requirements, or risk factors
+- Avoid redundant questions already answered in the context
+- Ensure questions align with Wells Fargo's enterprise standards
+</constraints>
+
+<output_requirements>
+Generate a single, targeted question that advances the conversation toward a complete proposal
+</output_requirements>`
         },
         {
           role: 'user',
           content: JSON.stringify(context)
         }
       ],
-      temperature: 0.7,
-      max_tokens: 150,
     });
 
     return response.choices[0].message.content || '';
@@ -71,13 +84,35 @@ export async function classifyIdea(ideaDetails: {
       messages: [
         {
           role: 'system',
-          content: `Classify this GenAI idea into one of four categories:
-                   1. Simple GenAI - Basic prompt-response interactions
-                   2. GenAI with Tools - LLM with function/tool calling capabilities
-                   3. Agentic AI - Single autonomous agent with planning capabilities
-                   4. Multi-Agent System - Multiple cooperating agents
+          content: `<role>
+AI architecture classifier for GenAI proposals
+</role>
 
-                   Provide your classification with confidence score (0-1) and reasoning.`
+<goal>
+Classify the GenAI idea into the most appropriate architectural category
+</goal>
+
+<classification_categories>
+1. Simple GenAI - Basic prompt-response interactions without external tools
+2. GenAI with Tools - LLM with function/tool calling capabilities for specific actions
+3. Agentic AI - Single autonomous agent with planning and decision-making capabilities
+4. Multi-Agent System - Multiple cooperating agents working together
+</classification_categories>
+
+<analysis_criteria>
+- Complexity of required interactions
+- Need for external tool integration
+- Level of autonomy required
+- Multi-step reasoning requirements
+- Collaboration between components
+</analysis_criteria>
+
+<output_format>
+Return JSON with:
+- classification: selected category name
+- confidence: score between 0 and 1
+- reasoning: detailed explanation of classification choice
+</output_format>`
         },
         {
           role: 'user',
@@ -85,7 +120,6 @@ export async function classifyIdea(ideaDetails: {
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3,
     });
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
@@ -131,10 +165,34 @@ export async function generateIntakeForm(conversationData: Record<string, any>):
       messages: [
         {
           role: 'system',
-          content: `Generate a complete Wells Fargo GenAI intake form from the provided conversation data.
-                   Map all conversation responses to the appropriate form fields.
-                   Identify any missing required information.
-                   Return structured JSON with form data, completeness percentage, and missing fields.`
+          content: `<role>
+Intake form generator for Wells Fargo GenAI proposals
+</role>
+
+<goal>
+Transform conversation data into a structured intake form with completeness assessment
+</goal>
+
+<tasks>
+1. Extract all relevant information from conversation data
+2. Map responses to appropriate intake form fields
+3. Identify missing required information
+4. Calculate completeness percentage based on required fields
+</tasks>
+
+<form_structure>
+- Business case section (problem, users, benefits, metrics)
+- Technical requirements (AI task type, data sources, integrations)
+- Risk and compliance (regulatory, privacy, security)
+- Resource requirements (team, budget, timeline)
+</form_structure>
+
+<output_format>
+Return JSON with:
+- formData: structured object with all extracted fields
+- completeness: percentage (0-100) of required fields filled
+- missingFields: array of specific missing information
+</output_format>`
         },
         {
           role: 'user',
@@ -142,7 +200,6 @@ export async function generateIntakeForm(conversationData: Record<string, any>):
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3,
     });
 
     return JSON.parse(response.choices[0].message.content || '{}');
@@ -165,7 +222,6 @@ export async function testConnection(): Promise<boolean> {
           content: 'Test connection. Reply with "OK"'
         }
       ],
-      max_tokens: 10,
     });
 
     return response.choices[0].message.content?.includes('OK') || false;

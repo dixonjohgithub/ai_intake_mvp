@@ -1,0 +1,279 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+  min-height: calc(100vh - 50px); /* Adjust based on actual header height */
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.progressSection {
+  margin-bottom: 1rem;
+}
+
+.stepGuide {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-radius: 8px;
+  border-left: 4px solid var(--wf-red);
+}
+
+.stepGuideHeader {
+  margin-bottom: 0.5rem;
+}
+
+.stepGuideHeader h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stepDescription {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.3;
+}
+
+.mainContent {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+  flex: 1;
+  overflow: hidden;
+}
+
+.conversationSection {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.undoButton,
+.redoButton,
+.saveButton {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.undoButton:hover,
+.redoButton:hover {
+  border-color: var(--wf-red);
+  color: var(--wf-red);
+  background: rgba(215, 30, 43, 0.05);
+}
+
+.saveButton {
+  margin-left: auto;
+  background: var(--wf-red);
+  color: white;
+  border-color: var(--wf-red);
+}
+
+.saveButton:hover {
+  background: #b81825;
+  border-color: #b81825;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.progressCard,
+.completenessCard,
+.helpCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progressCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.progressCard h3,
+.completenessCard h3,
+.helpCard h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.scoreList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.scoreItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scoreItem span:first-child {
+  min-width: 75px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.scoreBar {
+  flex: 1;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background: var(--wf-red);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.scoreValue {
+  min-width: 40px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.helpCard p {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.helpCard ul {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+}
+
+.helpCard li {
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+.autoSaveIndicator {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #4caf50;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .saveButton {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .autoSaveIndicator {
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 0.875rem;
+  }
+}

@@ -1,0 +1,175 @@
+.stepIndicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+.stepConnector {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
+.connectorLine {
+  position: absolute;
+  top: 0;
+  left: -50%;
+  right: 50%;
+  height: 2px;
+  background: #e0e0e0;
+  transition: background 0.3s ease;
+}
+
+.connectorCompleted {
+  background: var(--wf-red);
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.stepCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+  margin-bottom: 0.25rem;
+}
+
+.stepNumber {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.checkIcon {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+.stepLabel {
+  font-size: 0.75rem;
+  color: #999;
+  text-align: center;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  max-width: 100px;
+  line-height: 1.2;
+}
+
+/* Completed step styles */
+.step.completed .stepCircle {
+  background: var(--wf-red);
+  border-color: var(--wf-red);
+}
+
+.step.completed .stepLabel {
+  color: #333;
+}
+
+/* Active step styles */
+.step.active .stepCircle {
+  background: white;
+  border-color: var(--wf-red);
+  box-shadow: 0 0 0 4px rgba(215, 30, 43, 0.15);
+  transform: scale(1.1);
+}
+
+.step.active .stepNumber {
+  color: var(--wf-red);
+  font-weight: 700;
+}
+
+.step.active .stepLabel {
+  color: var(--wf-red);
+  font-weight: 600;
+}
+
+/* Pending step styles */
+.step.pending .stepCircle {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+.step.pending .stepNumber {
+  color: #999;
+}
+
+.step.pending .stepLabel {
+  color: #999;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .stepIndicator {
+    padding: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .step {
+    min-width: 80px;
+  }
+
+  .stepLabel {
+    font-size: 0.75rem;
+    max-width: 80px;
+  }
+
+  .stepCircle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .stepNumber {
+    font-size: 0.875rem;
+  }
+
+  .checkIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Animation for step transitions */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(215, 30, 43, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(215, 30, 43, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(215, 30, 43, 0);
+  }
+}
+
+.step.active .stepCircle {
+  animation: pulse 2s infinite;
+}

@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:static": "NEXT_PUBLIC_USE_OPENAI=false next dev -p 3073",
+    "dev:ai": "NEXT_PUBLIC_USE_OPENAI=true next dev -p 3073",
     "build": "next build",
     "start": "next start",
     "test": "jest",

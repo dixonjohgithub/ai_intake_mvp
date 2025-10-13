@@ -13,6 +13,18 @@
   gap: 1rem;
 }
 
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.logoLink:hover {
+  opacity: 0.8;
+}
+
 .logo {
   height: auto;
   width: auto;

@@ -164,7 +164,7 @@ npm run dev
 
 ## 📋 Features
 
-- **Conversational AI Interface**: Guided question flow using OpenAI GPT-4/5
+- **Conversational AI Interface**: Guided question flow using OpenAI GPT-5
 - **Duplicate Detection**: Semantic similarity using embeddings (>90% accuracy)
 - **Form Generation**: Auto-generates 2-page Wells Fargo intake form
 - **Decision Logging**: Complete audit trail of all AI decisions
@@ -201,7 +201,7 @@ ADMIN_PORT=3002        # Admin dashboard
 
 # OpenAI Configuration
 OPENAI_API_KEY=sk-...  # Your OpenAI API key
-OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MODEL=gpt-5
 OPENAI_REASONING_MODEL=o1-preview
 
 # Database
