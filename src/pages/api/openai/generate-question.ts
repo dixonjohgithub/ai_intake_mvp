@@ -103,31 +103,39 @@ export default async function handler(
                 val.includes('error-prone') || val.includes('manual') || val.includes('process')) &&
                val.length > 30; // Likely a business problem answer if it's substantive
       }) ||
-      (conversationHistory && conversationHistory.some(msg =>
-        msg.role === 'assistant' &&
-        (msg.content.toLowerCase().includes('business problem') ||
-         msg.content.toLowerCase().includes('what problem') ||
-         msg.content.toLowerCase().includes('problem are you') ||
-         msg.content.toLowerCase().includes('problem is this') ||
-         msg.content.toLowerCase().includes('aiming to solve'))
-      ));
+      (conversationHistory && conversationHistory.some((msg: any) => {
+        if (msg.role !== 'assistant') return false;
+        const content = msg.content.toLowerCase();
+        return content.includes('business problem') ||
+               content.includes('what problem') ||
+               content.includes('problem are you') ||
+               content.includes('problem is this') ||
+               content.includes('aiming to solve') ||
+               content.includes('trying to solve') ||
+               content.includes('aiming to address') ||
+               content.includes('problem does') ||
+               content.includes('solve with this');
+      }));
 
     if (hasBusinessProblem) {
       coveredTopics.push('business problem', 'pain points', 'challenges', 'specific business problem',
                          'problem to solve', 'problem are you solving', 'problem does this address',
-                         'problem is this solution addressing', 'what problem', 'aiming to solve');
+                         'problem is this solution addressing', 'what problem', 'aiming to solve',
+                         'trying to solve', 'aiming to address', 'solve with this solution',
+                         'solve with this', 'address with this');
       questionsSuggestedNext.push('target users', 'expected benefits');
     }
 
     // Check if target users has been asked
     const hasTargetUsers = userData['target_users'] || userData['users'] || userData['intended_users'] ||
-      (conversationHistory && conversationHistory.some(msg =>
-        msg.role === 'assistant' &&
-        (msg.content.toLowerCase().includes('target user') ||
-         msg.content.toLowerCase().includes('intended user') ||
-         msg.content.toLowerCase().includes('who will use') ||
-         msg.content.toLowerCase().includes('primary user'))
-      ));
+      (conversationHistory && conversationHistory.some((msg: any) => {
+        if (msg.role !== 'assistant') return false;
+        const content = msg.content.toLowerCase();
+        return content.includes('target user') ||
+               content.includes('intended user') ||
+               content.includes('who will use') ||
+               content.includes('primary user');
+      }));
 
     if (hasTargetUsers) {
       coveredTopics.push('intended users', 'target audience', 'user groups', 'target users',
@@ -137,12 +145,13 @@ export default async function handler(
 
     // Check if expected benefits has been asked
     const hasExpectedBenefits = userData['expected_benefits'] || userData['benefits'] ||
-      (conversationHistory && conversationHistory.some(msg =>
-        msg.role === 'assistant' &&
-        (msg.content.toLowerCase().includes('expected benefit') ||
-         msg.content.toLowerCase().includes('what benefit') ||
-         msg.content.toLowerCase().includes('expected outcome'))
-      ));
+      (conversationHistory && conversationHistory.some((msg: any) => {
+        if (msg.role !== 'assistant') return false;
+        const content = msg.content.toLowerCase();
+        return content.includes('expected benefit') ||
+               content.includes('what benefit') ||
+               content.includes('expected outcome');
+      }));
 
     if (hasExpectedBenefits) {
       coveredTopics.push('expected benefits', 'value proposition', 'outcomes', 'benefits');
@@ -152,12 +161,12 @@ export default async function handler(
     // Build conversation context for better awareness
     const conversationContext = conversationHistory && conversationHistory.length > 0
       ? `Recent conversation:
-${conversationHistory.slice(-6).map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n')}`
+${conversationHistory.slice(-6).map((msg: any) => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n')}`
       : '';
 
     // Analyze last response for quality and clarity needs
     const lastUserResponse = conversationHistory && conversationHistory.length > 0
-      ? conversationHistory.filter(m => m.role === 'user').pop()?.content || ''
+      ? conversationHistory.filter((m: any) => m.role === 'user').pop()?.content || ''
       : '';
 
     const needsClarification = lastUserResponse && (
