@@ -21,6 +21,74 @@ const getAIClient = () => {
   return null; // For static mode
 };
 
+/**
+ * LLM-based function to determine if a topic has been sufficiently answered
+ * This replaces brittle phrase-based detection with intelligent analysis
+ */
+async function hasTopicBeenAnswered(
+  aiClient: OpenAI,
+  modelName: string,
+  topic: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  userData: Record<string, any>
+): Promise<boolean> {
+  if (!conversationHistory || conversationHistory.length === 0) {
+    return false;
+  }
+
+  const prompt = `Analyze this conversation and determine if the "${topic}" has been sufficiently answered.
+
+Conversation History:
+${conversationHistory.map((msg: any) => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n')}
+
+User Data Collected:
+${JSON.stringify(userData, null, 2)}
+
+Question: Has the "${topic}" been sufficiently answered with enough detail?
+
+Criteria for "sufficiently answered":
+1. The assistant must have asked about this topic (or a close variation)
+2. The user must have provided a clear, specific response
+3. The answer should be substantive (not just "yes" or a few words)
+4. The response actually addresses the topic being asked about
+
+IMPORTANT:
+- Only return true if BOTH the question was asked AND a substantive answer was provided
+- If the assistant asked about it but user hasn't answered yet, return false
+- Be strict - the topic must be clearly covered in the conversation
+
+Return a JSON object with:
+{
+  "answered": true or false,
+  "reason": "brief explanation of your decision"
+}`;
+
+  try {
+    const response = await aiClient.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert at analyzing conversations and determining if questions have been answered. Be strict - only return true if the topic was clearly asked AND clearly answered with sufficient detail.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.3, // Lower temperature for more consistent results
+    });
+
+    const result = JSON.parse(response.choices[0]?.message?.content || '{"answered": false, "reason": "No response"}');
+    console.log(`📊 Topic Check - "${topic}": ${result.answered ? '✅ ANSWERED' : '❌ NOT ANSWERED'} - ${result.reason}`);
+    return result.answered === true;
+  } catch (error) {
+    console.error(`Error checking if "${topic}" was answered:`, error);
+    return false; // Fail safe - assume not answered
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -81,7 +149,12 @@ export default async function handler(
     const coveredTopics: string[] = [];
     const questionsSuggestedNext: string[] = [];
 
-    // Map userData keys to topics to avoid duplicates
+    // Determine which model to use for topic checking
+    const modelName = mode === 'ollama'
+      ? (process.env.OLLAMA_MODEL || 'gpt-oss:20b')
+      : (process.env.OPENAI_MODEL || 'gpt-5');
+
+    // Check for idea description (keep simple check for this)
     if (userData['idea_description'] || userData['idea'] || userData['core_idea']) {
       coveredTopics.push('basic idea description', 'core concept', 'solution overview', 'main idea', 'GenAI solution',
                          'project idea', 'GenAI project idea', 'brief overview', 'overview of your idea',
@@ -94,67 +167,47 @@ export default async function handler(
       }
     }
 
-    // Check if business problem has been answered by looking for key patterns in answers
-    // Also check conversationHistory for business problem questions that were already asked
-    const hasBusinessProblem = userData['business_problem'] || userData['problem'] ||
-      Object.entries(userData).some(([, value]) => {
-        const val = String(value).toLowerCase();
-        return (val.includes('reduce') || val.includes('solve') || val.includes('improve') ||
-                val.includes('error-prone') || val.includes('manual') || val.includes('process')) &&
-               val.length > 30; // Likely a business problem answer if it's substantive
-      }) ||
-      (conversationHistory && conversationHistory.some((msg: any) => {
-        if (msg.role !== 'assistant') return false;
-        const content = msg.content.toLowerCase();
-        return content.includes('business problem') ||
-               content.includes('what problem') ||
-               content.includes('problem are you') ||
-               content.includes('problem is this') ||
-               content.includes('aiming to solve') ||
-               content.includes('trying to solve') ||
-               content.includes('aiming to address') ||
-               content.includes('problem does') ||
-               content.includes('solve with this');
-      }));
+    // Use LLM to intelligently determine if topics have been answered
+    // This replaces brittle phrase matching with semantic understanding
+    console.log('🔍 Using LLM to check which topics have been answered...');
 
+    const hasBusinessProblem = await hasTopicBeenAnswered(
+      aiClient,
+      modelName,
+      'business problem or pain point this solution addresses',
+      conversationHistory,
+      userData
+    );
+
+    const hasTargetUsers = await hasTopicBeenAnswered(
+      aiClient,
+      modelName,
+      'target users or intended users of the solution',
+      conversationHistory,
+      userData
+    );
+
+    const hasExpectedBenefits = await hasTopicBeenAnswered(
+      aiClient,
+      modelName,
+      'expected benefits or outcomes of the solution',
+      conversationHistory,
+      userData
+    );
+
+    // Build covered topics based on LLM analysis
     if (hasBusinessProblem) {
-      coveredTopics.push('business problem', 'pain points', 'challenges', 'specific business problem',
-                         'problem to solve', 'problem are you solving', 'problem does this address',
-                         'problem is this solution addressing', 'what problem', 'aiming to solve',
-                         'trying to solve', 'aiming to address', 'solve with this solution',
-                         'solve with this', 'address with this');
+      coveredTopics.push('business problem', 'pain points', 'challenges', 'problem to solve');
       questionsSuggestedNext.push('target users', 'expected benefits');
     }
 
-    // Check if target users has been asked
-    const hasTargetUsers = userData['target_users'] || userData['users'] || userData['intended_users'] ||
-      (conversationHistory && conversationHistory.some((msg: any) => {
-        if (msg.role !== 'assistant') return false;
-        const content = msg.content.toLowerCase();
-        return content.includes('target user') ||
-               content.includes('intended user') ||
-               content.includes('who will use') ||
-               content.includes('primary user');
-      }));
-
     if (hasTargetUsers) {
-      coveredTopics.push('intended users', 'target audience', 'user groups', 'target users',
-                         'primary users', 'who will use');
+      coveredTopics.push('target users', 'intended users', 'user groups');
       questionsSuggestedNext.push('expected benefits', 'success metrics');
     }
 
-    // Check if expected benefits has been asked
-    const hasExpectedBenefits = userData['expected_benefits'] || userData['benefits'] ||
-      (conversationHistory && conversationHistory.some((msg: any) => {
-        if (msg.role !== 'assistant') return false;
-        const content = msg.content.toLowerCase();
-        return content.includes('expected benefit') ||
-               content.includes('what benefit') ||
-               content.includes('expected outcome');
-      }));
-
     if (hasExpectedBenefits) {
-      coveredTopics.push('expected benefits', 'value proposition', 'outcomes', 'benefits');
+      coveredTopics.push('expected benefits', 'outcomes', 'value proposition');
       questionsSuggestedNext.push('success metrics', 'KPIs');
     }
 
@@ -299,11 +352,7 @@ Return a JSON object with these exact fields:
 - stepInfo: "Step ${currentStep} of 5: ${stepName}"
 </output_requirements>`;
 
-    // Determine which model to use
-    const modelName = mode === 'ollama'
-      ? (process.env.OLLAMA_MODEL || 'gpt-oss:20b')
-      : (process.env.OPENAI_MODEL || 'gpt-5');
-
+    // Use the modelName already defined earlier for consistency
     const completion = await aiClient.chat.completions.create({
       model: modelName,
       messages: [
