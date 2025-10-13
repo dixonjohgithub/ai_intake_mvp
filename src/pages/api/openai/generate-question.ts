@@ -95,24 +95,57 @@ export default async function handler(
     }
 
     // Check if business problem has been answered by looking for key patterns in answers
+    // Also check conversationHistory for business problem questions that were already asked
     const hasBusinessProblem = userData['business_problem'] || userData['problem'] ||
       Object.entries(userData).some(([, value]) => {
         const val = String(value).toLowerCase();
         return (val.includes('reduce') || val.includes('solve') || val.includes('improve') ||
                 val.includes('error-prone') || val.includes('manual') || val.includes('process')) &&
                val.length > 30; // Likely a business problem answer if it's substantive
-      });
+      }) ||
+      (conversationHistory && conversationHistory.some(msg =>
+        msg.role === 'assistant' &&
+        (msg.content.toLowerCase().includes('business problem') ||
+         msg.content.toLowerCase().includes('what problem') ||
+         msg.content.toLowerCase().includes('problem are you') ||
+         msg.content.toLowerCase().includes('problem is this') ||
+         msg.content.toLowerCase().includes('aiming to solve'))
+      ));
 
     if (hasBusinessProblem) {
-      coveredTopics.push('business problem', 'pain points', 'challenges', 'specific business problem', 'problem to solve');
+      coveredTopics.push('business problem', 'pain points', 'challenges', 'specific business problem',
+                         'problem to solve', 'problem are you solving', 'problem does this address',
+                         'problem is this solution addressing', 'what problem', 'aiming to solve');
       questionsSuggestedNext.push('target users', 'expected benefits');
     }
-    if (userData['target_users'] || userData['users'] || userData['intended_users']) {
-      coveredTopics.push('intended users', 'target audience', 'user groups');
+
+    // Check if target users has been asked
+    const hasTargetUsers = userData['target_users'] || userData['users'] || userData['intended_users'] ||
+      (conversationHistory && conversationHistory.some(msg =>
+        msg.role === 'assistant' &&
+        (msg.content.toLowerCase().includes('target user') ||
+         msg.content.toLowerCase().includes('intended user') ||
+         msg.content.toLowerCase().includes('who will use') ||
+         msg.content.toLowerCase().includes('primary user'))
+      ));
+
+    if (hasTargetUsers) {
+      coveredTopics.push('intended users', 'target audience', 'user groups', 'target users',
+                         'primary users', 'who will use');
       questionsSuggestedNext.push('expected benefits', 'success metrics');
     }
-    if (userData['expected_benefits'] || userData['benefits']) {
-      coveredTopics.push('expected benefits', 'value proposition', 'outcomes');
+
+    // Check if expected benefits has been asked
+    const hasExpectedBenefits = userData['expected_benefits'] || userData['benefits'] ||
+      (conversationHistory && conversationHistory.some(msg =>
+        msg.role === 'assistant' &&
+        (msg.content.toLowerCase().includes('expected benefit') ||
+         msg.content.toLowerCase().includes('what benefit') ||
+         msg.content.toLowerCase().includes('expected outcome'))
+      ));
+
+    if (hasExpectedBenefits) {
+      coveredTopics.push('expected benefits', 'value proposition', 'outcomes', 'benefits');
       questionsSuggestedNext.push('success metrics', 'KPIs');
     }
 
