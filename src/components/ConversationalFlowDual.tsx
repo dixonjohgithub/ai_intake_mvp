@@ -532,8 +532,15 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
         // LLM Mode: Session is already created in submit-idea.tsx, don't recreate
         // Just add the welcome message
 
+        // Determine the specific mode
+        const modeString = process.env.NEXT_PUBLIC_AI_MODE === 'ollama'
+          ? 'Local Ollama GPT-OSS'
+          : process.env.NEXT_PUBLIC_AI_MODE === 'openai'
+          ? 'OpenAI GPT-5'
+          : 'AI-Powered';
+
         // Start with a welcome message
-        const welcomeMsg = `Welcome to the GenAI Idea Assistant! (AI-Powered Mode)
+        const welcomeMsg = `Welcome to the GenAI Idea Assistant! (${modeString} Mode)
 
 I'll guide you through developing your generative AI use case step-by-step:
 
@@ -643,7 +650,12 @@ Let's start by understanding your idea. Could you briefly describe your GenAI id
           </button>
         </div>
         <div className={styles.inputHint}>
-          Press Enter to send, Shift+Enter for new line • Mode: {useAI ? 'AI-Powered' : 'Static'}
+          Press Enter to send, Shift+Enter for new line • Mode: {
+            process.env.NEXT_PUBLIC_AI_MODE === 'ollama' ? 'Local Ollama' :
+            process.env.NEXT_PUBLIC_AI_MODE === 'openai' ? 'OpenAI GPT-5' :
+            process.env.NEXT_PUBLIC_AI_MODE === 'static' ? 'Static' :
+            'Unknown'
+          }
         </div>
       </form>
     </div>

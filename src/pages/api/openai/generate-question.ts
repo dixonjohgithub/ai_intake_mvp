@@ -1,10 +1,25 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 
-// Initialize OpenAI with server-side environment variable
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize AI client based on mode
+const getAIClient = () => {
+  const mode = process.env.NEXT_PUBLIC_AI_MODE || 'static';
+
+  if (mode === 'ollama') {
+    // Configure for local Ollama
+    return new OpenAI({
+      baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+      apiKey: process.env.OLLAMA_API_KEY || 'ollama',
+    });
+  } else if (mode === 'openai') {
+    // Configure for OpenAI
+    return new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+
+  return null; // For static mode
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,11 +32,29 @@ export default async function handler(
   try {
     const { context, userData } = req.body;
 
-    if (!process.env.OPENAI_API_KEY) {
+    const mode = process.env.NEXT_PUBLIC_AI_MODE || 'static';
+    const aiClient = getAIClient();
+
+    // Check configuration based on mode
+    if (mode === 'openai' && !process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not configured');
       return res.status(500).json({
         error: 'OpenAI API key not configured',
         message: 'Please configure OPENAI_API_KEY in your .env file'
+      });
+    }
+
+    if (mode === 'static') {
+      return res.status(400).json({
+        error: 'Static mode enabled',
+        message: 'AI generation is disabled in static mode'
+      });
+    }
+
+    if (!aiClient) {
+      return res.status(500).json({
+        error: 'AI client initialization failed',
+        message: `Failed to initialize AI client for mode: ${mode}`
       });
     }
 
@@ -155,8 +188,13 @@ Return a JSON object with these exact fields:
 - stepInfo: "Step ${currentStep} of 5: ${stepName}"
 </output_requirements>`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-5',
+    // Determine which model to use
+    const modelName = mode === 'ollama'
+      ? (process.env.OLLAMA_MODEL || 'gpt-oss:20b')
+      : (process.env.OPENAI_MODEL || 'gpt-5');
+
+    const completion = await aiClient.chat.completions.create({
+      model: modelName,
       messages: [
         {
           role: 'system',

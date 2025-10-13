@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:static": "NEXT_PUBLIC_USE_OPENAI=false next dev -p 3073",
-    "dev:ai": "NEXT_PUBLIC_USE_OPENAI=true next dev -p 3073",
+    "dev:static": "NEXT_PUBLIC_AI_MODE=static next dev -p 3073",
+    "dev:openai": "NEXT_PUBLIC_AI_MODE=openai next dev -p 3073",
+    "dev:ollama": "NEXT_PUBLIC_AI_MODE=ollama next dev -p 3073",
     "build": "next build",
     "start": "next start",
     "test": "jest",

@@ -42,7 +42,8 @@ const SubmitIdeaPage: React.FC = () => {
     }, 100);
 
     // Initialize managers - check environment variable for AI mode
-    const aiEnabled = process.env.NEXT_PUBLIC_USE_OPENAI === 'true';
+    const aiMode = process.env.NEXT_PUBLIC_AI_MODE || 'static';
+    const aiEnabled = aiMode !== 'static';
     setUseAI(aiEnabled);
 
     const convManager = new ConversationManager(aiEnabled);
@@ -162,8 +163,9 @@ const SubmitIdeaPage: React.FC = () => {
           <h1 className={styles.title}>Submit Your GenAI Idea</h1>
           <p className={styles.subtitle}>
             Let's work together to develop your generative AI use case
-            {useAI && <span style={{color: '#4CAF50', marginLeft: '10px'}}>• AI-Powered Mode</span>}
-            {!useAI && <span style={{color: '#FF9800', marginLeft: '10px'}}>• Static Mode</span>}
+            {process.env.NEXT_PUBLIC_AI_MODE === 'openai' && <span style={{color: '#4CAF50', marginLeft: '10px'}}>• OpenAI GPT-5</span>}
+            {process.env.NEXT_PUBLIC_AI_MODE === 'ollama' && <span style={{color: '#00BCD4', marginLeft: '10px'}}>• Local Ollama GPT-OSS</span>}
+            {process.env.NEXT_PUBLIC_AI_MODE === 'static' && <span style={{color: '#FF9800', marginLeft: '10px'}}>• Static Mode</span>}
           </p>
         </div>
 

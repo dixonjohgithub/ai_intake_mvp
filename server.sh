@@ -39,15 +39,26 @@ stop_server() {
     fi
 }
 
-# Function to start server in AI mode
-start_ai() {
+# Function to start server in OpenAI mode
+start_openai() {
     if check_server; then
         echo -e "${RED}Server is already running on port $PORT${NC}"
-        echo "Use './server.sh restart-ai' to restart in AI mode"
+        echo "Use './server.sh restart-openai' to restart in OpenAI mode"
         return 1
     fi
-    echo -e "${GREEN}Starting server in AI-Powered mode...${NC}"
-    npm run dev:ai
+    echo -e "${GREEN}Starting server in OpenAI GPT-5 mode...${NC}"
+    npm run dev:openai
+}
+
+# Function to start server in Ollama mode
+start_ollama() {
+    if check_server; then
+        echo -e "${RED}Server is already running on port $PORT${NC}"
+        echo "Use './server.sh restart-ollama' to restart in Ollama mode"
+        return 1
+    fi
+    echo -e "${GREEN}Starting server in Local Ollama GPT-OSS mode...${NC}"
+    npm run dev:ollama
 }
 
 # Function to start server in static mode
@@ -86,8 +97,11 @@ show_status() {
 
 # Main script logic
 case "$1" in
-    start-ai)
-        start_ai
+    start-openai)
+        start_openai
+        ;;
+    start-ollama)
+        start_ollama
         ;;
     start-static)
         start_static
@@ -95,10 +109,15 @@ case "$1" in
     stop)
         stop_server
         ;;
-    restart-ai)
+    restart-openai)
         stop_server
         sleep 1
-        start_ai
+        start_openai
+        ;;
+    restart-ollama)
+        stop_server
+        sleep 1
+        start_ollama
         ;;
     restart-static)
         stop_server
@@ -115,16 +134,19 @@ case "$1" in
         echo "Usage: ./server.sh [command]"
         echo ""
         echo "Commands:"
-        echo "  start-ai       - Start server in AI-Powered mode"
-        echo "  start-static   - Start server in Static mode"
-        echo "  stop           - Stop the server"
-        echo "  restart-ai     - Restart server in AI mode"
-        echo "  restart-static - Restart server in Static mode"
-        echo "  status         - Show server status"
+        echo "  start-openai     - Start server with OpenAI GPT-5"
+        echo "  start-ollama     - Start server with Local Ollama GPT-OSS"
+        echo "  start-static     - Start server in Static mode"
+        echo "  stop             - Stop the server"
+        echo "  restart-openai   - Restart server with OpenAI"
+        echo "  restart-ollama   - Restart server with Ollama"
+        echo "  restart-static   - Restart server in Static mode"
+        echo "  status           - Show server status"
         echo ""
         echo "Examples:"
-        echo "  ./server.sh start-ai"
-        echo "  ./server.sh stop"
+        echo "  ./server.sh start-ollama    # Fast local mode"
+        echo "  ./server.sh start-openai    # OpenAI GPT-5 mode"
+        echo "  ./server.sh start-static    # No AI, predefined questions"
         echo "  ./server.sh status"
         echo ""
         show_status
