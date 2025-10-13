@@ -60,6 +60,8 @@
   align-items: start;
   flex: 1;
   overflow: hidden;
+  height: calc(100vh - 400px); /* Fixed height considering header and progress sections */
+  min-height: 400px;
 }
 
 .conversationSection {
@@ -70,6 +72,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent content from overflowing */
+  min-height: 0; /* Important for flex children */
 }
 
 .actions {
@@ -121,6 +125,9 @@
   gap: 1rem;
   height: 100%;
   overflow-y: auto;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 420px);
 }
 
 .progressCard,
@@ -137,6 +144,10 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
 }
 
 .progressCard h3,

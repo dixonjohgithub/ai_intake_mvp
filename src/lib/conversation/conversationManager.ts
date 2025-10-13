@@ -141,9 +141,19 @@ export class ConversationManager {
       conversation.userData[currentQuestionId] = response;
     }
 
-    // Generate next question
+    // Build conversation history for AI context
+    const conversationHistory = conversation.messages
+      .filter(msg => msg.type !== 'system')
+      .map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
+    // Generate next question with full conversation context
     const nextQuestion = await this.questionGenerator.generateNextQuestion(
-      conversation.userData
+      conversation.userData,
+      undefined,
+      conversationHistory
     );
 
     // Update progress

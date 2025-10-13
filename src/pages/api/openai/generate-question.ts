@@ -30,7 +30,7 @@ export default async function handler(
   }
 
   try {
-    const { context, userData } = req.body;
+    const { context, userData, conversationHistory } = req.body;
 
     const mode = process.env.NEXT_PUBLIC_AI_MODE || 'static';
     const aiClient = getAIClient();
@@ -91,8 +91,18 @@ export default async function handler(
         questionsSuggestedNext.push('business problem', 'target users');
       }
     }
-    if (userData['business_problem'] || userData['problem']) {
-      coveredTopics.push('business problem', 'pain points', 'challenges');
+
+    // Check if business problem has been answered by looking for key patterns in answers
+    const hasBusinessProblem = userData['business_problem'] || userData['problem'] ||
+      Object.entries(userData).some(([, value]) => {
+        const val = String(value).toLowerCase();
+        return (val.includes('reduce') || val.includes('solve') || val.includes('improve') ||
+                val.includes('error-prone') || val.includes('manual') || val.includes('process')) &&
+               val.length > 30; // Likely a business problem answer if it's substantive
+      });
+
+    if (hasBusinessProblem) {
+      coveredTopics.push('business problem', 'pain points', 'challenges', 'specific business problem', 'problem to solve');
       questionsSuggestedNext.push('target users', 'expected benefits');
     }
     if (userData['target_users'] || userData['users'] || userData['intended_users']) {
@@ -104,24 +114,63 @@ export default async function handler(
       questionsSuggestedNext.push('success metrics', 'KPIs');
     }
 
+    // Build conversation context for better awareness
+    const conversationContext = conversationHistory && conversationHistory.length > 0
+      ? `Recent conversation:
+${conversationHistory.slice(-6).map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n')}`
+      : '';
+
+    // Analyze last response for quality and clarity needs
+    const lastUserResponse = conversationHistory && conversationHistory.length > 0
+      ? conversationHistory.filter(m => m.role === 'user').pop()?.content || ''
+      : '';
+
+    const needsClarification = lastUserResponse && (
+      lastUserResponse.length < 30 ||
+      lastUserResponse.toLowerCase().includes('not sure') ||
+      lastUserResponse.toLowerCase().includes('maybe') ||
+      lastUserResponse.toLowerCase().includes('i think')
+    );
+
     // Build prompt for question generation using GPT-5 structured format
     const prompt = `<context>
 User responses collected so far:
 ${JSON.stringify(userData, null, 2)}
 
+${conversationContext}
+
 Current Step: ${currentStep} of 5 - ${stepName}
 Questions Asked: ${answeredQuestions.length}
 Topics Already Covered: ${coveredTopics.length > 0 ? coveredTopics.join(', ') : 'None'}
 Suggested Next Topics: ${questionsSuggestedNext.length > 0 ? questionsSuggestedNext.join(', ') : 'Continue with ' + stepName + ' questions'}
+
+Last Response Quality: ${needsClarification ? 'May need clarification or more detail' : 'Clear and detailed'}
 </context>
 
 <task>
 Generate exactly ONE focused question to advance this GenAI proposal.
 Current focus area: ${stepName}
+
+COLLABORATION MODE:
+${needsClarification ?
+`- The last response seems uncertain or brief
+- Consider asking a clarifying question about the same topic
+- Help the user refine and expand their idea
+- Examples: "Could you elaborate on...", "What specific aspects of...", "Help me understand..."` :
+`- The user has provided a clear response
+- Move to the next logical topic
+- Build on what they've shared`}
+
+CONTEXT AWARENESS:
+- Review the conversation history to understand the flow
+- Reference previous answers when relevant ("You mentioned...")
+- Avoid asking for information already provided
+- Topics already covered: ${coveredTopics.join(', ')}
+
 IMPORTANT:
-- Ask about ONE specific aspect only. Do not combine multiple concepts.
-- DO NOT ask about topics already covered: ${coveredTopics.join(', ')}
-- Move to NEW information not yet collected
+- Ask about ONE specific aspect only
+- Be conversational and supportive
+- Help users who seem uncertain
 - Consider asking about: ${questionsSuggestedNext.length > 0 ? questionsSuggestedNext[0] : 'next logical topic in ' + stepName}
 </task>
 
@@ -176,14 +225,28 @@ Step 5 (Risk Assessment):
   - Never combine risk factors in a single question
 </step_focus>
 
+<example_guidance>
+ALWAYS include helpful examples in your questions to guide novice users:
+- For "use case" questions: Provide 2-3 concrete examples
+- For technical questions: Use simple analogies and examples
+- For business questions: Give relatable scenarios
+- Format examples as: "For example: [example1], [example2], or [example3]"
+
+Example formats:
+- "What specific use case...? For example: 'Automatically categorize customer emails by urgency', 'Route support tickets to the right team', or 'Classify documents by department'"
+- "What business problem...? For instance: 'Currently takes 3 hours daily to manually sort emails', 'Missing important customer requests due to volume', or 'Staff spending too much time on repetitive tasks'"
+- "Who are the target users...? Such as: 'Customer service team (15 people)', 'All analysts in the risk department', or 'External clients using our portal'"
+</example_guidance>
+
 <output_requirements>
 Return a JSON object with these exact fields:
 - id: unique identifier (use kebab-case based on the single topic)
-- text: ONE clear, focused question about a SINGLE topic (no "and" joining concepts)
+- text: ONE clear question with helpful examples embedded (e.g., "Question text? For example: [examples]")
 - type: one of ['text', 'select', 'multiselect', 'boolean', 'scale']
 - category: one of ['business', 'technical', 'feasibility', 'risk', 'success']
 - required: boolean indicating if response is mandatory
-- helpText: brief guidance starting with "(Step ${currentStep} of 5) ..."
+- helpText: brief guidance with additional context and examples
+- exampleResponse: A complete sample answer to show users what a good response looks like
 - options: array of choices (only if type is select/multiselect)
 - stepInfo: "Step ${currentStep} of 5: ${stepName}"
 </output_requirements>`;
@@ -199,7 +262,7 @@ Return a JSON object with these exact fields:
         {
           role: 'system',
           content: `<role>
-Expert AI consultant for Wells Fargo GenAI idea intake - Single-question step-by-step interviewer
+Expert AI consultant and collaborative partner for Wells Fargo GenAI idea intake
 </role>
 
 <expertise>
@@ -207,28 +270,47 @@ Expert AI consultant for Wells Fargo GenAI idea intake - Single-question step-by
 - Wells Fargo compliance and security requirements
 - Risk assessment for financial services AI
 - Technical feasibility analysis
-- Conversational interview techniques with ONE question at a time
+- Collaborative refinement and idea development
+- Context-aware conversational techniques
 </expertise>
 
+<collaboration_approach>
+🤝 PARTNERSHIP: Work WITH the user to refine and develop their ideas
+🤝 CONTEXT: Always consider the full conversation history
+🤝 CLARITY: When responses are vague, help clarify before moving on
+🤝 SUPPORT: Encourage users who seem uncertain
+🤝 REFERENCE: Connect new questions to previous answers
+🤝 EXAMPLES: Always provide concrete examples to guide novice users
+</collaboration_approach>
+
+<user_guidance_principles>
+📚 EXAMPLES ALWAYS: Every question must include 2-3 relatable examples
+📚 SIMPLE LANGUAGE: Avoid jargon; explain technical terms with analogies
+📚 SAMPLE RESPONSES: Show what a good answer looks like
+📚 CONTEXT CLUES: Help users understand why you're asking
+📚 ENCOURAGE DETAIL: Use examples to prompt comprehensive responses
+</user_guidance_principles>
+
 <absolute_requirements>
-🔴 CRITICAL: You MUST ask exactly ONE question about ONE topic
-🔴 NEVER combine multiple concepts with "and", "as well as", "also", or similar conjunctions
-🔴 Each question must focus on a SINGLE aspect only
-🔴 If tempted to ask about two things, choose ONE and save the other for the next question
+🔴 Ask exactly ONE question about ONE topic at a time
+🔴 NEVER repeat questions already answered in the conversation
+🔴 Check conversation history to avoid duplicates
+🔴 Reference previous answers when relevant
+🔴 Help refine unclear or brief responses
 </absolute_requirements>
 
 <core_principles>
-1. ALWAYS ask exactly ONE question at a time - no exceptions
-2. Never combine multiple topics in a single question
-3. Avoid using "and" to join different concepts
-4. Keep questions conversational but focused on ONE thing
-5. Guide users step-by-step through the process
-6. Provide clear step indicators showing progression
-7. Build questions based on previous answers
+1. Be conversational and supportive, not interrogative
+2. Build on previous answers to show you're listening
+3. Help users expand on uncertain responses
+4. Avoid redundancy by checking what's already been discussed
+5. Guide step-by-step but adapt to user's clarity level
+6. Ask clarifying questions when responses are vague
+7. Celebrate progress and acknowledge good ideas
 </core_principles>
 
 <objective>
-Guide users through comprehensive idea development with laser-focused, single-topic questions that build progressively through clearly defined steps
+Collaboratively develop comprehensive GenAI proposals through context-aware, supportive dialogue that helps users refine their ideas while avoiding duplicate questions
 </objective>`,
         },
         {

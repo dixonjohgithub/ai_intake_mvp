@@ -16,6 +16,7 @@ export interface Question {
   };
   helpText?: string;
   stepInfo?: string; // Step indicator like "Step 1 of 5: Introduction"
+  exampleResponse?: string; // Sample answer to guide users
   dependsOn?: {
     questionId: string;
     answer?: any;
@@ -243,6 +244,7 @@ export const questionTemplates: QuestionTemplate[] = [
 
 export class QuestionGenerator {
   private context: Map<string, any> = new Map();
+  private conversationHistory: Array<{ role: string; content: string }> = [];
 
   constructor(private useAI: boolean = true) {}
 
@@ -251,15 +253,21 @@ export class QuestionGenerator {
    */
   async generateNextQuestion(
     userData: Record<string, any>,
-    category?: string
+    category?: string,
+    conversationHistory?: Array<{ role: string; content: string }>
   ): Promise<Question | null> {
     // Update context with user data
     Object.entries(userData).forEach(([key, value]) => {
       this.context.set(key, value);
     });
 
+    // Update conversation history if provided
+    if (conversationHistory) {
+      this.conversationHistory = conversationHistory;
+    }
+
     if (this.useAI) {
-      return this.generateAIQuestion(userData);
+      return this.generateAIQuestion(userData, conversationHistory);
     } else {
       return this.generateTemplateQuestion(userData, category);
     }
@@ -268,10 +276,13 @@ export class QuestionGenerator {
   /**
    * Generate question using OpenAI through API route
    */
-  private async generateAIQuestion(userData: Record<string, any>): Promise<Question | null> {
+  private async generateAIQuestion(
+    userData: Record<string, any>,
+    conversationHistory?: Array<{ role: string; content: string }>
+  ): Promise<Question | null> {
     try {
-      // Use the API client to call our Next.js API route
-      const question = await apiClient.generateQuestion(userData);
+      // Use the API client to call our Next.js API route with full conversation history
+      const question = await apiClient.generateQuestion(userData, conversationHistory);
       return question;
     } catch (error) {
       console.error('Error generating AI question:', error);

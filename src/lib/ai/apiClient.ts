@@ -11,6 +11,7 @@ export interface Question {
   required: boolean;
   helpText?: string;
   stepInfo?: string; // Step indicator like "Step 1 of 5: Introduction"
+  exampleResponse?: string; // Sample answer to guide users
   options?: string[];
 }
 
@@ -25,14 +26,17 @@ export interface AnalysisResult {
 /**
  * Generate next question based on user data
  */
-export async function generateQuestion(userData: Record<string, any>): Promise<Question | null> {
+export async function generateQuestion(
+  userData: Record<string, any>,
+  conversationHistory?: Array<{ role: string; content: string }>
+): Promise<Question | null> {
   try {
     const response = await fetch('/api/openai/generate-question', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userData }),
+      body: JSON.stringify({ userData, conversationHistory }),
     });
 
     if (!response.ok) {

@@ -356,15 +356,38 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
     // Store user response and mark question as completed
     if (currentQuestionId) {
       // For the initial question, make sure we store it with the right key
-      const questionKey = currentQuestionId === 'idea_description' ? 'idea_description' : currentQuestionId;
+      let questionKey = currentQuestionId === 'idea_description' ? 'idea_description' : currentQuestionId;
+
+      // Map AI-generated questions to semantic keys based on content patterns
+      if (useAI) {
+        const lastAssistantMsg = messages.filter(m => m.type === 'assistant').pop();
+        if (lastAssistantMsg) {
+          const msgContent = lastAssistantMsg.content.toLowerCase();
+
+          // Detect question type and assign semantic key
+          if (msgContent.includes('business problem') || msgContent.includes('problem does') ||
+              msgContent.includes('pain point') || msgContent.includes('challenge')) {
+            questionKey = 'business_problem';
+          } else if (msgContent.includes('target user') || msgContent.includes('intended user') ||
+                     msgContent.includes('who will use') || msgContent.includes('who are the')) {
+            questionKey = 'target_users';
+          } else if (msgContent.includes('expected benefit') || msgContent.includes('value') ||
+                     msgContent.includes('outcome') || msgContent.includes('achieve')) {
+            questionKey = 'expected_benefits';
+          }
+        }
+      }
 
       setUserData(prev => ({
         ...prev,
         [questionKey]: userMessage,
-        // Also store as 'idea' and 'core_idea' to prevent duplicates
+        // Also store as alternate keys to prevent duplicates
         ...(questionKey === 'idea_description' ? {
           'idea': userMessage,
           'core_idea': userMessage
+        } : {}),
+        ...(questionKey === 'business_problem' ? {
+          'problem': userMessage
         } : {})
       }));
 
@@ -425,6 +448,13 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
             currentStepNum = 2;
           }
 
+          // Update progress immediately when we get a new step
+          if (onProgressUpdate && nextStepNum > 0) {
+            // Calculate progress based on questions answered
+            const overallProgress = Math.min(Math.round((questionsAnswered / 12) * 100), 100);
+            onProgressUpdate(nextStepNum, overallProgress);
+          }
+
           // Add transition message if moving to new step
           if (nextStepNum > currentStepNum && currentStepNum > 0) {
             addMessage(
@@ -433,15 +463,22 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
             );
           }
 
-          // Format the question with step indicator
-          let questionText = result.nextQuestion.text || result.nextQuestion.question;
-          if (result.nextQuestion.stepInfo) {
+          // Format the question with step indicator and example response
+          let questionText = result.nextQuestion.text || result.nextQuestion.question || '';
+          if (result.nextQuestion.stepInfo && questionText) {
             questionText = `[${result.nextQuestion.stepInfo}]\n\n${questionText}`;
           }
 
+          // Add example response if provided by the AI
+          if (result.nextQuestion.exampleResponse) {
+            questionText += `\n\n💡 **Example Response:**\n"${result.nextQuestion.exampleResponse}"`;
+          }
+
           // Ask the next AI-generated question
-          addMessage('assistant', questionText);
-          setCurrentQuestionId(result.nextQuestion.id);
+          if (questionText) {
+            addMessage('assistant', questionText);
+            setCurrentQuestionId(result.nextQuestion.id);
+          }
         } else {
           // All questions completed
           handleCompletion();
@@ -574,7 +611,7 @@ Let's start by understanding your idea. Could you briefly describe your GenAI id
   }, []); // Only run once on mount
 
   return (
-    <div className={styles.conversationalFlow}>
+    <div className={styles.conversationalFlow} style={{ flex: '1 1 auto', minHeight: 0 }}>
       <div className={styles.messagesContainer}>
         <div className={styles.messagesList}>
           {messages.map((message) => (
