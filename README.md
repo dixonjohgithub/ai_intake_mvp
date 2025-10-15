@@ -113,6 +113,7 @@ A Wells Fargo-branded web application that guides users through GenAI idea submi
 
 ### 1. Clone and Setup
 
+**Mac/Linux:**
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -123,6 +124,19 @@ cp .env.example .env
 
 # Edit .env and add your OpenAI API key and other settings
 nano .env
+```
+
+**Windows (Command Prompt):**
+```cmd
+# Clone the repository
+git clone <repository-url>
+cd AI_Intake
+
+# Copy environment configuration
+copy .env.example .env
+
+# Edit .env and add your OpenAI API key and other settings
+notepad .env
 ```
 
 ### 2. Running with Docker (Recommended)
@@ -407,6 +421,70 @@ Content-Type: application/json
   "format": "pdf" // or "word", "preview"
 }
 ```
+
+## 💻 Windows Compatibility
+
+### Cross-Platform npm Scripts
+
+All npm scripts use `cross-env` for Windows/Mac/Linux compatibility. The following commands work identically across all platforms:
+
+```bash
+# Static mode (no API required)
+npm run dev:static
+
+# OpenAI mode (requires API key)
+npm run dev:openai
+
+# Ollama mode (requires local Ollama)
+npm run dev:ollama
+```
+
+### Windows-Specific Commands
+
+**Clear Next.js Cache (Windows):**
+```cmd
+rmdir /s /q .next
+npm run dev:static
+```
+
+**Hard Browser Refresh:**
+- Press `Ctrl + Shift + R` to clear browser cache and reload
+
+**Create Data Directories (Windows):**
+```cmd
+mkdir data
+mkdir logs
+```
+
+**Check Node/npm Versions (Windows):**
+```cmd
+node --version
+npm --version
+```
+
+### npm Deprecation Warnings
+
+During `npm install` on Windows (and other platforms), you may see these deprecation warnings:
+
+```
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated inflight@1.0.6: This module is not supported
+```
+
+**These warnings are safe to ignore:**
+- `glob@7.2.3` - From Jest testing (dev dependency only)
+- `node-domexception@1.0.0` - From OpenAI SDK (will be fixed in future updates)
+- `inflight@1.0.6` - From glob dependency (dev dependency only)
+
+None of these affect production functionality.
+
+### Windows Firewall
+
+If you encounter connection issues:
+1. Allow Node.js through Windows Firewall
+2. Ensure ports 3073, 3001, 3002 are not blocked
+3. Check antivirus software isn't blocking the application
 
 ## 🐛 Troubleshooting
 
