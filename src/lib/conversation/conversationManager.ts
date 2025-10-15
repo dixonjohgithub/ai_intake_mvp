@@ -149,6 +149,12 @@ export class ConversationManager {
         content: msg.content
       }));
 
+    console.log('🔍 ConversationManager - Building conversation history:', {
+      totalMessages: conversation.messages.length,
+      filteredMessages: conversationHistory.length,
+      conversationHistory
+    });
+
     // Generate next question with full conversation context
     const nextQuestion = await this.questionGenerator.generateNextQuestion(
       conversation.userData,

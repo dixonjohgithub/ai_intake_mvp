@@ -13,6 +13,8 @@ export interface Question {
   stepInfo?: string; // Step indicator like "Step 1 of 5: Introduction"
   exampleResponse?: string; // Sample answer to guide users
   options?: string[];
+  complete?: boolean; // Indicates conversation is complete (15 questions reached)
+  message?: string; // Completion message when complete is true
 }
 
 export interface AnalysisResult {
@@ -24,31 +26,133 @@ export interface AnalysisResult {
 }
 
 /**
- * Generate next question based on user data
+ * Generate next question using V2 static question flow (60-70% faster)
+ * Uses predefined Q1-Q10 sequence with criteria validation
+ */
+export async function generateQuestionV2(
+  userData: Record<string, any>,
+  conversationHistory: Array<{ role: string; content: string }>,
+  currentQuestionNumber: number,
+  followUpCount: number = 0
+): Promise<any> {
+  try {
+    const payload = {
+      userData,
+      conversationHistory,
+      currentQuestionNumber,
+      followUpCount
+    };
+
+    console.log('📤 CLIENT → API V2: Sending request to /api/openai/generate-question-v2');
+    console.log('📊 Payload:', {
+      userDataKeys: Object.keys(userData),
+      currentQuestionNumber,
+      followUpCount,
+      historyLength: conversationHistory?.length || 0
+    });
+
+    const response = await fetch('/api/openai/generate-question-v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error('❌ API V2 error response');
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('📥 API V2 → CLIENT: Received response', data);
+    return data;
+  } catch (error) {
+    console.error('💥 Failed to generate question V2:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate next question based on user data with streaming support (V1 - Legacy)
  */
 export async function generateQuestion(
   userData: Record<string, any>,
-  conversationHistory?: Array<{ role: string; content: string }>
+  conversationHistory?: Array<{ role: string; content: string }>,
+  onChunk?: (chunk: string) => void
 ): Promise<Question | null> {
   try {
+    const payload = { userData, conversationHistory };
+
+    // Log the complete payload being sent to the API
+    console.log('📤 CLIENT → API: Sending request to /api/openai/generate-question');
+    console.log('📊 Payload Stats:', {
+      userDataKeys: Object.keys(userData),
+      userDataCount: Object.keys(userData).length,
+      conversationHistoryLength: conversationHistory?.length || 0,
+    });
+
     const response = await fetch('/api/openai/generate-question', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userData, conversationHistory }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('API error:', error);
+      console.error('❌ API error response');
       return null;
     }
 
-    const data = await response.json();
-    return data.question;
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let question: Question | null = null;
+
+    if (!reader) {
+      console.error('❌ No reader available');
+      return null;
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      // Decode the chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete SSE messages
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || ''; // Keep incomplete message in buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+
+          if (data.chunk && onChunk) {
+            // Stream chunk to callback
+            onChunk(data.chunk);
+          } else if (data.done && data.question) {
+            // Final complete question
+            question = data.question;
+          } else if (data.error) {
+            console.error('❌ Stream error:', data.error);
+            return null;
+          }
+        }
+      }
+    }
+
+    if (question) {
+      console.log('📥 API → CLIENT: Received complete question');
+      console.log('✨ Generated Question:', JSON.stringify(question, null, 2));
+      return question;
+    }
+
+    return null;
   } catch (error) {
-    console.error('Failed to generate question:', error);
+    console.error('💥 Failed to generate question:', error);
     return null;
   }
 }

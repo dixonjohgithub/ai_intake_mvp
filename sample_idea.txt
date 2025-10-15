@@ -1,0 +1,23 @@
+I want to build a log classifier that classifies log items and routes each to the appropriate analyst for processing.
+
+We will call it AI-Enabled Log Classifier
+
+The problem is that there is significant manual effort required to classify log messages and route them to the correct analyst for processing. The current manual process is error-prone. The solution would automate classification using an LLM, accurately classify the log item, and route it to the analyst for processing. We want to reduce the time it takes to classify and process log items. The solution will reduce the time analysts spend manually triaging logs. The main problem is that analysts spend about 4 hours each day manually scanning and sorting logs to identify incidents. This leads to delayed responses to critical events and increased overtime costs.
+
+
+The classifier will deliver these benefits: faster incident triage, reduced analyst workload, improved threat-detection accuracy, and quicker incident response times.
+
+The security operations department will use this log classifier.
+
+The classifier will eliminate human classification effort, reducing it from 2 hours to 0 hours, as the process will be fully automated. This will allow an analyst to receive log item incidents immediately, rather than waiting 2-3 days. This will also reduce human classification errors by more than 20%.
+
+We will use the data from the Axios application dashboard log files. These data files are stored in Google Cloud Storage. The classifier will get these log files from the Google Cloud Storage buckets and perform the analysis.
+
+
+The senior security analysts process each log item assigned to their area.
+
+By automating classification, we expect to eliminate 2 hours of manual review per log item, resulting in about 90 hours saved per week for a team of five analysts. Misclassification errors should drop from 20% to 5%, boosting accuracy from 80% to 95%.
+
+We will use the data from the Axios application dashboard log files. These data files are stored in Google Cloud Storage. The classifier will get these log files from the Google Cloud Storage buckets and perform the analysis.
+
+The primary users are the security analysts in the Network Security Team and the three incident‑response managers in the Operations Center.

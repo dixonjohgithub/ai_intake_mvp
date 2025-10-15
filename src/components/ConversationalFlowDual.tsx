@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import styles from './ConversationalFlow.module.css';
 import {
   QUESTION_FLOW,
@@ -9,6 +10,7 @@ import {
   getQuestionById,
 } from '@/lib/conversation/questionConfig';
 import { ConversationManager } from '@/lib/conversation/conversationManager';
+import LoadingOverlay from './LoadingOverlay';
 
 export interface Message {
   id: string;
@@ -64,9 +66,21 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const hasInitializedRef = useRef(false);
+  const messagesRef = useRef<Message[]>([]);
 
   // Track current question index for static mode
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  // V2 API State - Track question number and follow-ups
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
+  const [followUpCount, setFollowUpCount] = useState(0);
+  const [isFollowUp, setIsFollowUp] = useState(false);
+  const [missingCriteria, setMissingCriteria] = useState<string[]>([]);
+
+  // Loading overlay state
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('Processing your response...');
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Auto-scroll to bottom when new messages arrive (but not on initial mount)
   useEffect(() => {
@@ -99,7 +113,11 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
       metadata,
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => {
+      const updated = [...prev, newMessage];
+      messagesRef.current = updated; // Keep ref in sync with state
+      return updated;
+    });
 
     // Don't duplicate messages in conversation manager - it handles its own storage
     // The conversation manager's messages are passed in through initialState
@@ -310,11 +328,16 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
           const updatedCompletedQuestions = [...completedQuestions, currentQuestionId];
           setCompletedQuestions(updatedCompletedQuestions);
 
-          // Update progress
-          const currentStep = getCurrentStep(updatedCompletedQuestions);
-          const overallProgress = calculateOverallProgress(updatedCompletedQuestions);
-          if (onProgressUpdate) {
-            onProgressUpdate(currentStep, overallProgress);
+          // ⚠️ DO NOT update progress here in AI mode - wait for LLM response to confirm the step
+          // This prevents the progress bar from "jumping" when user submits a response
+          // Progress will be updated in processUserResponse() when LLM confirms the step
+          if (!useAI) {
+            // For static mode only, update progress immediately since we know the flow
+            const currentStep = getCurrentStep(updatedCompletedQuestions);
+            const overallProgress = calculateOverallProgress(updatedCompletedQuestions);
+            if (onProgressUpdate) {
+              onProgressUpdate(currentStep, overallProgress);
+            }
           }
 
           // Show typing indicator and move to next question
@@ -394,91 +417,187 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
       const updatedCompletedQuestions = [...completedQuestions, currentQuestionId];
       setCompletedQuestions(updatedCompletedQuestions);
 
-      // Update progress
-      const currentStep = getCurrentStep(updatedCompletedQuestions);
-      const overallProgress = calculateOverallProgress(updatedCompletedQuestions);
-      if (onProgressUpdate) {
-        onProgressUpdate(currentStep, overallProgress);
+      // ⚠️ DO NOT update progress here in AI mode - wait for LLM response to confirm the step
+      // This prevents the progress bar from "jumping" when user submits a response
+      // Progress will be updated in processUserResponse() when LLM confirms the step
+      if (!useAI) {
+        // For static mode only, update progress immediately since we know the flow
+        const currentStep = getCurrentStep(updatedCompletedQuestions);
+        const overallProgress = calculateOverallProgress(updatedCompletedQuestions);
+        if (onProgressUpdate) {
+          onProgressUpdate(currentStep, overallProgress);
+        }
       }
     }
 
-    // Show typing indicator
+    // Show typing indicator and loading overlay
     setIsTyping(true);
     setIsProcessing(true);
+
+    // Show full-screen loading overlay for AI mode
+    if (useAI) {
+      setShowLoadingOverlay(true);
+      setLoadingStatus('Analyzing your response...');
+      setLoadingProgress(10);
+
+      // Simulate progress stages
+      setTimeout(() => {
+        setLoadingStatus('Validating against criteria...');
+        setLoadingProgress(40);
+      }, 500);
+
+      setTimeout(() => {
+        setLoadingStatus('Generating next question...');
+        setLoadingProgress(70);
+      }, 1500);
+    }
 
     // Process the response and get next question
     setTimeout(async () => {
       await processUserResponse();
+
+      // Final progress update before hiding
+      if (useAI) {
+        setLoadingStatus('Complete!');
+        setLoadingProgress(100);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
       setIsTyping(false);
       setIsProcessing(false);
+      setShowLoadingOverlay(false);
     }, 1000);
   };
 
   const processUserResponse = async () => {
     try {
       if (useAI && conversationManager) {
-        // LLM Mode: Use conversation manager for dynamic questions
-        const result = await conversationManager.processUserResponse(
-          sessionId,
-          userData[currentQuestionId!] || '',
-          currentQuestionId || undefined
+        // LLM Mode: Build conversation history directly from React messages state (using ref)
+        console.log('🔍 Building conversation history from messagesRef:', {
+          totalMessages: messagesRef.current.length,
+          messageTypes: messagesRef.current.map(m => m.type),
+          messagesPreview: messagesRef.current.map(m => ({
+            type: m.type,
+            contentPreview: m.content.substring(0, 100) + '...'
+          }))
+        });
+
+        const conversationHistory = messagesRef.current
+          .filter(msg => msg.type !== 'system')
+          .map(msg => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }));
+
+        console.log('📋 Conversation history built:', {
+          historyLength: conversationHistory.length,
+          history: conversationHistory
+        });
+
+        // Use V2 API for 60-70% performance improvement
+        const { generateQuestionV2 } = await import('@/lib/ai/apiClient');
+        const response = await generateQuestionV2(
+          userData,
+          conversationHistory,
+          currentQuestionNumber,
+          followUpCount
         );
 
-        if (result.nextQuestion) {
-          // Parse the stepInfo from the AI-generated question
-          const stepInfoMatch = result.nextQuestion.stepInfo?.match(/Step (\d+) of (\d+): (.+)/);
-          let currentStepNum = 1;
-          let nextStepNum = 1;
-          let stepName = '';
+        // V2 API Response Handling
 
-          if (stepInfoMatch) {
-            nextStepNum = parseInt(stepInfoMatch[1]);
-            stepName = stepInfoMatch[3];
+        // ⚠️ CRITICAL: Sync userData with the API response to ensure proper field mapping
+        if (response?.userData) {
+          setUserData(response.userData);
+          console.log('💾 Updated userData from API:', response.userData);
+        }
+
+        // Handle completion (all 11 questions answered)
+        if (response?.complete) {
+          console.log('✅ Conversation complete - 11 questions answered');
+          addMessage('assistant', response.message || 'Great work! You\'ve provided all the information we need. Please review and submit your proposal.');
+          handleCompletion();
+          return;
+        }
+
+        // Handle "I don't know" - AI assistance
+        if (response?.needsAIAssistance) {
+          console.log('🆘 User needs AI assistance');
+          const suggestionMsg = `I understand you're not sure. Based on your idea, here's a suggestion:\n\n${response.suggestion}\n\nYou can:\n• Use this suggestion as-is\n• Modify it to fit your needs\n• Provide your own answer`;
+          addMessage('assistant', suggestionMsg);
+          // Don't move forward - wait for user to respond
+          return;
+        }
+
+        // Handle follow-up question (criteria not met)
+        if (response?.isFollowUp) {
+          console.log('🔄 Follow-up question needed', {
+            followUpCount: response.followUpCount,
+            missingCriteria: response.missingCriteria
+          });
+
+          setFollowUpCount(response.followUpCount);
+          setIsFollowUp(true);
+          setMissingCriteria(response.missingCriteria || []);
+
+          // Format follow-up message with missing criteria
+          let followUpMsg = response.question.text;
+          if (response.missingCriteria && response.missingCriteria.length > 0) {
+            followUpMsg += `\n\n💡 **What I still need:**\n${response.missingCriteria.map((c: string) => `• ${c}`).join('\n')}`;
           }
 
-          // Get current step number from userData count
-          const questionsAnswered = Object.keys(userData).length;
-          if (questionsAnswered >= 10) {
-            currentStepNum = 5;
-          } else if (questionsAnswered >= 7) {
-            currentStepNum = 4;
-          } else if (questionsAnswered >= 4) {
-            currentStepNum = 3;
-          } else if (questionsAnswered >= 2) {
-            currentStepNum = 2;
-          }
+          addMessage('assistant', followUpMsg);
+          setCurrentQuestionId(response.question.id);
+          return;
+        }
 
-          // Update progress immediately when we get a new step
-          if (onProgressUpdate && nextStepNum > 0) {
-            // Calculate progress based on questions answered
-            const overallProgress = Math.min(Math.round((questionsAnswered / 12) * 100), 100);
+        // Move to next question (criteria met OR max follow-ups reached)
+        if (response?.question) {
+          // Update V2 state
+          setCurrentQuestionNumber(response.currentQuestionNumber);
+          setFollowUpCount(0);
+          setIsFollowUp(false);
+          setMissingCriteria([]);
+
+          // Calculate step number (1-5) based on question number (1-11)
+          const nextStepNum = response.currentQuestionNumber <= 2 ? 1 :
+                              response.currentQuestionNumber <= 4 ? 2 :
+                              response.currentQuestionNumber <= 6 ? 3 :
+                              response.currentQuestionNumber <= 8 ? 4 : 5;
+
+          // Calculate progress (0-100%)
+          const overallProgress = Math.round((response.currentQuestionNumber / 11) * 100);
+
+          // Update progress
+          if (onProgressUpdate) {
             onProgressUpdate(nextStepNum, overallProgress);
+            console.log(`📊 Progress updated: Step ${nextStepNum}/5, ${overallProgress}%`);
           }
 
-          // Add transition message if moving to new step
-          if (nextStepNum > currentStepNum && currentStepNum > 0) {
-            addMessage(
-              'system',
-              `🎉 Excellent! You've completed Step ${currentStepNum}. Moving on to Step ${nextStepNum}: ${stepName}\n\nThis step will focus on ${stepName.toLowerCase()} aspects of your GenAI solution.`
-            );
+          // Format question with criteria
+          let questionText = `[${response.question.stepInfo}]\n\n${response.question.text}`;
+
+          // Add criteria checklist if available
+          if (response.question.criteria && response.question.criteria.length > 0) {
+            questionText += `\n\n📋 **Please include:**\n${response.question.criteria.map((c: string, i: number) => `${i + 1}. ${c}`).join('\n')}`;
           }
 
-          // Format the question with step indicator and example response
-          let questionText = result.nextQuestion.text || result.nextQuestion.question || '';
-          if (result.nextQuestion.stepInfo && questionText) {
-            questionText = `[${result.nextQuestion.stepInfo}]\n\n${questionText}`;
+          // Add example response
+          if (response.question.exampleResponse) {
+            questionText += `\n\n💡 **Example Response:**\n"${response.question.exampleResponse}"`;
           }
 
-          // Add example response if provided by the AI
-          if (result.nextQuestion.exampleResponse) {
-            questionText += `\n\n💡 **Example Response:**\n"${result.nextQuestion.exampleResponse}"`;
+          // Add help text
+          if (response.question.helpText) {
+            questionText += `\n\n❓ **Tip:** ${response.question.helpText}`;
           }
 
-          // Ask the next AI-generated question
-          if (questionText) {
-            addMessage('assistant', questionText);
-            setCurrentQuestionId(result.nextQuestion.id);
+          // Show max follow-ups reached message if applicable
+          if (response.maxFollowUpsReached) {
+            addMessage('system', 'Moving forward with your current answer. We can refine details later.');
           }
+
+          addMessage('assistant', questionText);
+          setCurrentQuestionId(response.question.id);
         } else {
           // All questions completed
           handleCompletion();
@@ -577,21 +696,13 @@ const ConversationalFlowDual: React.FC<ConversationalFlowDualProps> = ({
           : 'AI-Powered';
 
         // Start with a welcome message
-        const welcomeMsg = `Welcome to the GenAI Idea Assistant! (${modeString} Mode)
+        const welcomeMsg = `Welcome to the GenAI Idea Assistant! (${modeString} Mode - V2 🚀)
 
-I'll guide you through developing your generative AI use case step-by-step:
+I'll guide you through 11 focused questions to capture your generative AI idea. Let's get started!
 
-• Step 1: Introduction - Understanding your basic idea
-• Step 2: Business Case - Defining the problem and benefits
-• Step 3: Technical Details - AI capabilities and data needs
-• Step 4: Feasibility - Timeline and resources
-• Step 5: Risk Assessment - Compliance and success metrics
+[Question 1 of 11]
 
-Each step will have focused questions, asked one at a time.
-
-[Step 1 of 5: Introduction]
-
-Let's start by understanding your idea. Could you briefly describe your GenAI idea in 2-3 sentences?`;
+What GenAI solution do you want to build? (Describe your idea in 2-3 sentences)`;
 
         addMessage('assistant', welcomeMsg, { category: 'greeting', questionId: 'idea_description' });
         setCurrentQuestionId('idea_description');
@@ -611,8 +722,15 @@ Let's start by understanding your idea. Could you briefly describe your GenAI id
   }, []); // Only run once on mount
 
   return (
-    <div className={styles.conversationalFlow} style={{ flex: '1 1 auto', minHeight: 0 }}>
-      <div className={styles.messagesContainer}>
+    <>
+      <LoadingOverlay
+        show={showLoadingOverlay}
+        status={loadingStatus}
+        progress={loadingProgress}
+        estimatedTime={10}
+      />
+      <div className={styles.conversationalFlow} style={{ flex: '1 1 auto', minHeight: 0 }}>
+        <div className={styles.messagesContainer}>
         <div className={styles.messagesList}>
           {messages.map((message) => (
             <div
@@ -631,7 +749,11 @@ Let's start by understanding your idea. Could you briefly describe your GenAI id
                 </span>
               </div>
               <div className={styles.messageContent}>
-                {message.content}
+                {message.type === 'assistant' ? (
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           ))}
@@ -695,7 +817,8 @@ Let's start by understanding your idea. Could you briefly describe your GenAI id
           }
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 };
 

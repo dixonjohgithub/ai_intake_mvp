@@ -16,7 +16,6 @@ const SubmitIdeaPage: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [showAutoSave, setShowAutoSave] = useState(false);
   const [useAI, setUseAI] = useState(false);
 
   const steps = [
@@ -25,7 +24,6 @@ const SubmitIdeaPage: React.FC = () => {
     { id: 'technical', label: 'Technical Details', status: 'pending' as const },
     { id: 'feasibility', label: 'Feasibility', status: 'pending' as const },
     { id: 'risk', label: 'Risk Assessment', status: 'pending' as const },
-    { id: 'review', label: 'Review & Submit', status: 'pending' as const },
   ];
 
   useEffect(() => {
@@ -72,14 +70,7 @@ const SubmitIdeaPage: React.FC = () => {
     setReasoningEngine(reasonEngine);
     setIsLoading(false);
 
-    // Auto-save indicator
-    const autoSaveInterval = setInterval(() => {
-      setShowAutoSave(true);
-      setTimeout(() => setShowAutoSave(false), 2000);
-    }, 30000);
-
     return () => {
-      clearInterval(autoSaveInterval);
       convManager.stopAutoSave();
     };
   }, []);
@@ -90,6 +81,14 @@ const SubmitIdeaPage: React.FC = () => {
     // Analyze conversation
     const conversation = conversationManager.getConversation(sessionId);
     if (!conversation) return;
+
+    // Build conversation history for API
+    const conversationHistory = conversation.messages
+      .filter(m => m.type === 'user' || m.type === 'assistant')
+      .map(m => ({
+        role: m.type === 'user' ? 'user' : 'assistant',
+        content: m.content
+      }));
 
     const context = {
       userData,
@@ -108,10 +107,11 @@ const SubmitIdeaPage: React.FC = () => {
 
     const analysis = await reasoningEngine.analyzeConversation(context);
 
-    // Store analysis and navigate to review
+    // Store analysis, userData, and conversationHistory for submission
     if (analysis) {
       sessionStorage.setItem('ideaAnalysis', JSON.stringify(analysis));
       sessionStorage.setItem('ideaData', JSON.stringify(userData));
+      sessionStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
       router.push('/review-idea');
     }
   };
@@ -119,20 +119,6 @@ const SubmitIdeaPage: React.FC = () => {
   const handleSave = (state: any) => {
     // State is automatically saved by ConversationManager
     console.log('Conversation state saved');
-  };
-
-  const handleUndo = () => {
-    if (conversationManager) {
-      conversationManager.undo(sessionId);
-      updateProgress();
-    }
-  };
-
-  const handleRedo = () => {
-    if (conversationManager) {
-      conversationManager.redo(sessionId);
-      updateProgress();
-    }
   };
 
   const updateProgress = () => {
@@ -175,21 +161,20 @@ const SubmitIdeaPage: React.FC = () => {
             currentStep={currentStep}
           />
           <WizardProgress
-            totalSteps={6}
+            totalSteps={5}
             currentStep={currentStep}
             stepLabels={steps.map(s => s.label)}
           />
           <div className={styles.stepGuide}>
             <div className={styles.stepGuideHeader}>
-              <h3>Step {currentStep} of 6: {steps[currentStep - 1].label}</h3>
+              <h3>Step {currentStep} of 5: {steps[currentStep - 1].label}</h3>
             </div>
             <div className={styles.stepDescription}>
               {currentStep === 1 && "We'll start with a brief introduction and understand the basics of your GenAI idea."}
               {currentStep === 2 && "Define the business problem, target users, and expected benefits of your solution."}
               {currentStep === 3 && "Specify technical requirements, data sources, and integration needs."}
               {currentStep === 4 && "Assess implementation complexity, data availability, and timeline."}
-              {currentStep === 5 && "Identify potential risks, compliance considerations, and mitigation strategies."}
-              {currentStep === 6 && "Review all information and submit your completed GenAI proposal."}
+              {currentStep === 5 && "Identify potential risks and challenges for your project."}
             </div>
           </div>
         </div>
@@ -211,39 +196,6 @@ const SubmitIdeaPage: React.FC = () => {
               useAI={useAI}
               conversationManager={conversationManager}
             />
-
-            <div className={styles.actions}>
-              <button
-                className={styles.undoButton}
-                onClick={handleUndo}
-                aria-label="Undo last response"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M4 10L2 8L4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 8H14C16.2091 8 18 9.79086 18 12C18 14.2091 16.2091 16 14 16H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Undo
-              </button>
-
-              <button
-                className={styles.redoButton}
-                onClick={handleRedo}
-                aria-label="Redo response"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M16 10L18 8L16 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18 8H6C3.79086 8 2 9.79086 2 12C2 14.2091 3.79086 16 6 16H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Redo
-              </button>
-
-              <button
-                className={styles.saveButton}
-                onClick={() => router.push('/')}
-              >
-                Save & Exit
-              </button>
-            </div>
           </div>
 
           <div className={styles.sidebar}>
@@ -261,21 +213,11 @@ const SubmitIdeaPage: React.FC = () => {
               <p>Our AI assistant is here to guide you through each step.</p>
               <ul>
                 <li>Answer questions at your own pace</li>
-                <li>Use undo/redo if you change your mind</li>
                 <li>Your progress is automatically saved</li>
               </ul>
             </div>
           </div>
         </div>
-
-        {showAutoSave && (
-          <div className={styles.autoSaveIndicator}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M13.5 5.5L6 13L2.5 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Auto-saved
-          </div>
-        )}
       </div>
     </Layout>
   );

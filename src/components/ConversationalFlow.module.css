@@ -95,8 +95,77 @@
   color: #333;
   border: 1px solid #e0e0e0;
   border-bottom-left-radius: 4px;
-  white-space: pre-line; /* Preserve line breaks */
   line-height: 1.6; /* Better line spacing */
+}
+
+/* Markdown styling for assistant messages */
+.message-assistant .messageContent p {
+  margin: 0 0 0.75rem 0;
+}
+
+.message-assistant .messageContent p:last-child {
+  margin-bottom: 0;
+}
+
+.message-assistant .messageContent strong {
+  font-weight: 600;
+  color: #111;
+}
+
+.message-assistant .messageContent em {
+  font-style: italic;
+  color: #555;
+}
+
+.message-assistant .messageContent ul,
+.message-assistant .messageContent ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.message-assistant .messageContent li {
+  margin: 0.25rem 0;
+}
+
+.message-assistant .messageContent h1,
+.message-assistant .messageContent h2,
+.message-assistant .messageContent h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-weight: 600;
+  color: #111;
+}
+
+.message-assistant .messageContent h1 {
+  font-size: 1.25rem;
+}
+
+.message-assistant .messageContent h2 {
+  font-size: 1.125rem;
+}
+
+.message-assistant .messageContent h3 {
+  font-size: 1rem;
+}
+
+.message-assistant .messageContent code {
+  background: #f5f5f5;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.message-assistant .messageContent pre {
+  background: #f5f5f5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.message-assistant .messageContent pre code {
+  background: transparent;
+  padding: 0;
 }
 
 .message-system .messageContent {
