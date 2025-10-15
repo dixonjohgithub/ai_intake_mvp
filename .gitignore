@@ -5,6 +5,7 @@
 .env.test
 .env.production
 .env*.local
+# Note: .env.example should be tracked in git as a template
 
 # Project-specific files
 CLAUDE.md
