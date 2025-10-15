@@ -486,6 +486,63 @@ If you encounter connection issues:
 2. Ensure ports 3073, 3001, 3002 are not blocked
 3. Check antivirus software isn't blocking the application
 
+## 🔒 Corporate Network / SSL Certificate Issues
+
+### Self-Signed Certificate Error
+
+If you encounter this error when running the application:
+
+```
+TypeError: fetch failed
+Error: self-signed certificate in certificate chain
+code: 'SELF_SIGNED_CERT_IN_CHAIN'
+```
+
+**Cause:** Your Windows environment is behind a corporate proxy (e.g., Wells Fargo network) that uses self-signed SSL certificates for traffic inspection.
+
+**Solution 1: Disable SSL Verification (Development Only)**
+
+Add this to your `.env` file:
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0
+```
+
+⚠️ **SECURITY WARNING:** This disables SSL certificate verification. Only use in development environments behind trusted corporate networks. NEVER use in production.
+
+**Solution 2: Install Corporate Certificates (Recommended)**
+
+1. Obtain your company's root certificate (`.crt` or `.pem` file)
+2. Set the certificate path in `.env`:
+
+```bash
+NODE_EXTRA_CA_CERTS=C:/path/to/company-root-cert.pem
+```
+
+**Solution 3: Configure npm for Corporate Proxy**
+
+If `npm install` fails with certificate errors:
+
+```bash
+# Disable strict SSL for npm (temporary)
+npm config set strict-ssl false
+
+# Or set proxy settings
+npm config set proxy http://proxy.company.com:8080
+npm config set https-proxy http://proxy.company.com:8080
+```
+
+**Verify the Fix:**
+
+After adding `NODE_TLS_REJECT_UNAUTHORIZED=0` to `.env`:
+
+```bash
+# Restart the server
+npm run dev:static
+
+# The error should be resolved
+```
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
