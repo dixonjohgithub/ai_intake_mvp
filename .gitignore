@@ -13,8 +13,8 @@ create-prd.md
 generate-tasks.md
 process-task-list.md
 
-# Images folder
-images/
+# Images folder (root level only, not public/images/)
+/images/
 
 # Dependencies
 node_modules/
